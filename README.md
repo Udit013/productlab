@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ProductLab — Product Decision Intelligence Platform
 
-## Getting Started
+> Transform raw product usage data into product strategy decisions.
+> What should we build next? Why? With what expected impact?
 
-First, run the development server:
+## What Is ProductLab?
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+ProductLab is a self-hosted, open-source Product Decision Intelligence Platform — 100% free, no paid APIs, no subscriptions.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Combines the best of Productboard + Amplitude + Mixpanel + Optimizely + Aha!
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Decision Center — ranked initiatives with Priority Score, ROI, retention lift, revenue impact
+- Product Analytics — funnels, cohort heatmaps, feature adoption, user segments
+- Experimentation Intelligence — A/B/multivariate, statistical significance engine, lift analysis
+- Opportunity Engine — auto-discovers high_demand_low_adoption, churn risks, satisfaction gaps
+- Prioritization Engine — RICE, ICE, WSJF, composite scoring
+- Roadmap Intelligence — quarterly roadmap with capacity & expected outcomes
+- AI Product Advisor — Ollama (Llama/Qwen/Mistral) + deterministic fallback
+- Executive Reports — weekly/monthly/quarterly with PDF export
+- Event Platform — JS SDK, explorer, definitions
 
-## Learn More
+## Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
+Next.js 16 · TypeScript · Tailwind CSS · PostgreSQL · Drizzle ORM · Ollama · jsPDF
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Quick Start
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. npm install
+2. Set DATABASE_URL in .env.local
+3. Run SQL: psql $DATABASE_URL < scripts/create-tables.sql
+4. npm run dev
+5. Click "Load Demo Data" on the Decision Center
 
-## Deploy on Vercel
+## Demo Data
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+10,000 users · 100,000+ events · 25 features · 10 experiments · 8 opportunities · 6 initiatives · Quarterly roadmap
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deployment
+
+Vercel + Neon PostgreSQL (both free tier available)
+
+## JavaScript SDK
+
+ProductLab.track("feature_used", { feature: "AI Search", userId: "123" })
+
+## License
+
+MIT
