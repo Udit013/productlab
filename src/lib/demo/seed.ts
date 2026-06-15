@@ -60,9 +60,11 @@ function pick<T>(arr: T[], weights?: number[]): T {
 }
 
 function gaussian(mean: number, std: number): number {
-  const u1 = rand()
+  // Box-Muller. Clamp u1 to (0, 1] so the sqrt argument is always >= 0
+  // (u1 + constant could exceed 1, making -2*log negative -> NaN).
+  const u1 = Math.min(Math.max(rand(), 1e-9), 1)
   const u2 = rand()
-  const z = Math.sqrt(-2 * Math.log(u1 + 0.0001)) * Math.cos(2 * Math.PI * u2)
+  const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2)
   return Math.max(0, mean + std * z)
 }
 
@@ -234,8 +236,8 @@ export async function seedDatabase() {
       'audit-log': plan === 'enterprise' ? 0.85 : 0.05,
     }
 
-    // Sessions over time
-    for (let s = 1; s <= Math.min(totalSessions, 200); s++) {
+    // Sessions over time (capped to keep the dataset within free-tier storage)
+    for (let s = 1; s <= Math.min(totalSessions, 4); s++) {
       const sessionDate = addDays(signupDate, Math.floor(s * daysSinceSignup / totalSessions))
       if (sessionDate > END_DATE) break
       const sessionId = `sess_${user.id}_${s}`
@@ -301,10 +303,35 @@ export async function seedDatabase() {
       }
     }
 
+    // Retention-checkpoint sessions — produce a realistic D1>D7>D30>D90 curve.
+    // (Cheap: a handful of events per user, but anchors the retention windows.)
+    const checkpoints = [1, 7, 14, 30, 60, 90]
+    const retentionProb = isActive
+      ? [0.62, 0.45, 0.38, 0.30, 0.22, 0.16]
+      : [0.40, 0.18, 0.10, 0.05, 0.02, 0.01]
+    for (let c = 0; c < checkpoints.length; c++) {
+      const day = checkpoints[c]
+      if (day > daysSinceSignup) break
+      if (rand() >= retentionProb[c]) continue
+      const checkpointDate = addDays(signupDate, day)
+      if (checkpointDate > END_DATE) break
+      eventBatches.push({
+        userId: user.id,
+        sessionId: `sess_${user.id}_ret_${day}`,
+        eventName: 'session_start',
+        eventCategory: 'engagement',
+        properties: { retentionDay: day },
+        deviceType: pick(DEVICES),
+        browser: pick(BROWSERS),
+        country: user.country,
+        receivedAt: checkpointDate,
+      })
+    }
+
     // Login events
     if (isActive) {
       const loginCount = Math.floor(totalSessions * 0.8)
-      for (let l = 0; l < Math.min(loginCount, 50); l++) {
+      for (let l = 0; l < Math.min(loginCount, 6); l++) {
         const loginDate = randomDateBetween(signupDate, lastSeen)
         eventBatches.push({
           userId: user.id,

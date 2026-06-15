@@ -25,22 +25,15 @@ export async function getRetentionCohorts(granularity: 'week' | 'month' = 'month
       FROM events
       WHERE event_name = 'signup' AND user_id IS NOT NULL
     ),
-    activity AS (
-      SELECT DISTINCT
-        e.user_id,
-        DATE_TRUNC(${truncUnit}, e.received_at) as activity_date
-      FROM events e
-      WHERE e.user_id IS NOT NULL AND e.event_name = 'session_start'
-    ),
     cohort_data AS (
       SELECT
         s.cohort_date,
         s.user_id,
-        a.activity_date,
-        EXTRACT(EPOCH FROM (a.activity_date - s.cohort_date)) / 86400 as days_since_signup
+        EXTRACT(EPOCH FROM (e.received_at - s.signup_date)) / 86400 as days_since_signup
       FROM signups s
-      LEFT JOIN activity a ON s.user_id = a.user_id
-        AND a.activity_date >= s.cohort_date
+      LEFT JOIN events e ON e.user_id = s.user_id
+        AND e.event_name = 'session_start'
+        AND e.received_at > s.signup_date
     )
     SELECT
       cohort_date::text,
@@ -83,7 +76,7 @@ export async function getRetentionSummary() {
       FROM events WHERE event_name = 'signup' AND user_id IS NOT NULL
       GROUP BY user_id
     ),
-    returning AS (
+    return_activity AS (
       SELECT
         s.user_id,
         EXTRACT(EPOCH FROM (e.received_at - s.signup_date)) / 86400 as days_diff
@@ -101,7 +94,7 @@ export async function getRetentionSummary() {
         NULLIF((SELECT COUNT(DISTINCT user_id) FROM signups), 0) * 100 as d30_retention,
       COUNT(DISTINCT CASE WHEN days_diff BETWEEN 85 AND 95 THEN user_id END)::float /
         NULLIF((SELECT COUNT(DISTINCT user_id) FROM signups), 0) * 100 as d90_retention
-    FROM returning
+    FROM return_activity
   `)
 
   const row = result.rows[0] as Record<string, unknown>

@@ -1,10 +1,7 @@
 import 'dotenv/config'
+import { sql } from 'drizzle-orm'
 import { seedDatabase } from '../src/lib/demo/seed'
 import { getDb } from '../src/lib/db'
-import {
-  users, events, features, experiments, experimentResults,
-  opportunities, initiatives, roadmapItems, goals,
-} from '../src/lib/db/schema'
 
 async function main() {
   if (!process.env.DATABASE_URL) {
@@ -14,15 +11,14 @@ async function main() {
   const db = getDb()
 
   console.log('Clearing existing data...')
-  await db.delete(experimentResults)
-  await db.delete(roadmapItems)
-  await db.delete(initiatives)
-  await db.delete(opportunities)
-  await db.delete(experiments)
-  await db.delete(events)
-  await db.delete(users)
-  await db.delete(features)
-  await db.delete(goals)
+  // TRUNCATE (not DELETE) to reclaim storage immediately and avoid bloating
+  // history/WAL — important on storage-limited tiers like Neon free.
+  await db.execute(sql`
+    TRUNCATE TABLE
+      experiment_results, roadmap_items, initiatives, opportunities,
+      experiments, events, users, features, goals
+    RESTART IDENTITY CASCADE
+  `)
 
   const result = await seedDatabase()
   console.log(`\n✓ Seed complete: ${result.users.toLocaleString()} users, ${result.events.toLocaleString()} events`)
